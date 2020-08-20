@@ -10,7 +10,7 @@ contract LPTokenWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public uni = IERC20(0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244);
+    IERC20 public uniswapToken = IERC20(0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244);
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -26,19 +26,19 @@ contract LPTokenWrapper {
     function stake(uint256 amount) public {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        uni.safeTransferFrom(msg.sender, address(this), amount);
+        uniswapToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) public {
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        uni.safeTransfer(msg.sender, amount);
+        uniswapToken.safeTransfer(msg.sender, amount);
     }
 }
 
 contract Unipool is LPTokenWrapper, IRewardDistributionRecipient {
-    IERC20 public snx = IERC20(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
-    uint256 public constant DURATION = 7 days;
+    IERC20 public ultraToken = IERC20(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
+    uint256 public constant DURATION = 30 days;
 
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -110,25 +110,29 @@ contract Unipool is LPTokenWrapper, IRewardDistributionRecipient {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            snx.safeTransfer(msg.sender, reward);
+            ultraToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
 
-    function notifyRewardAmount(uint256 reward)
+    function notifyRewardAmount(uint256 _amount)
         external
-        onlyRewardDistribution
         updateReward(address(0))
     {
         if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(DURATION);
+            rewardRate = _amount.div(DURATION);
         } else {
-            uint256 remaining = periodFinish.sub(block.timestamp);
-            uint256 leftover = remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(DURATION);
+            uint256 remainingTime = periodFinish.sub(block.timestamp);
+            uint256 leftoverReward = remainingTime.mul(rewardRate);
+            uint256 newRewardRate = _amount.add(leftoverReward).div(DURATION);
+            require(newRewardRate >= rewardRate, "New reward rate too low");
+            rewardRate = newRewardRate;
         }
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
-        emit RewardAdded(reward);
+
+        ultraToken.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit RewardAdded(_amount);
     }
 }
