@@ -10,7 +10,7 @@ contract LPTokenWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public uniswapToken = IERC20(0x42D52847BE255eacEE8c3f96b3B223c0B3cC0438);
+    IERC20 public uniswapEthUosToken = IERC20(0x42D52847BE255eacEE8c3f96b3B223c0B3cC0438);
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -26,18 +26,18 @@ contract LPTokenWrapper {
     function stake(uint256 amount) public {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        uniswapToken.safeTransferFrom(msg.sender, address(this), amount);
+        uniswapEthUosToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) public {
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        uniswapToken.safeTransfer(msg.sender, amount);
+        uniswapEthUosToken.safeTransfer(msg.sender, amount);
     }
 }
 
 contract Unipool is LPTokenWrapper, IRewardDistributionRecipient {
-    IERC20 public ultraToken = IERC20(0xD13c7342e1ef687C5ad21b27c2b65D772cAb5C8c);
+    IERC20 public uos = IERC20(0xD13c7342e1ef687C5ad21b27c2b65D772cAb5C8c);
     uint256 public constant DURATION = 30 days;
 
     uint256 public periodFinish = 0;
@@ -110,7 +110,7 @@ contract Unipool is LPTokenWrapper, IRewardDistributionRecipient {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            ultraToken.safeTransfer(msg.sender, reward);
+            uos.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -131,7 +131,7 @@ contract Unipool is LPTokenWrapper, IRewardDistributionRecipient {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
 
-        ultraToken.safeTransferFrom(msg.sender, address(this), _amount);
+        uos.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit RewardAdded(_amount);
     }
