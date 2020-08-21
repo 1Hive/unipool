@@ -223,7 +223,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.earned(wallet2)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('7500'));
         });
 
-        it.only('Notify Reward reverts when notifying will reduce reward rate within same period', async function () {
+        it('Notify Reward reverts when notifying will reduce reward rate within same period', async function () {
             const originalAwardAmount = 10000;
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
             await timeIncreaseTo(this.started.add(time.duration.days(20)));
@@ -232,7 +232,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
                 'New reward rate too low');
         });
 
-        it.only('Notify Reward updates reward amount when notifying within same period', async function () {
+        it('Notify Reward updates reward amount when notifying within same period', async function () {
             const originalAwardAmount = 10000;
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
             const originalRewardRate = await this.unipool.rewardRate();
@@ -243,7 +243,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.rewardRate()).to.be.bignumber.greaterThan(originalRewardRate);
         });
 
-        it.only('Notify Reward can be less when notifying in a new period', async function () {
+        it('Notify Reward can be less when notifying in a new period', async function () {
             const originalAwardAmount = 10000;
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
             const originalRewardRate = await this.unipool.rewardRate();
