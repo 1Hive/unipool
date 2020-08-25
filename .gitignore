@@ -3,3 +3,4 @@ coverage
 coverage.json
 build
 package-lock.json
+.idea

@@ -1,7 +1,7 @@
 pragma solidity ^0.5.9;
 
-import 'openzeppelin-solidity/contracts/token/ERC20/ERC20Pausable.sol';
-import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol';
+import '@openzeppelin/contracts/ownership/Ownable.sol';
 
 contract UltraToken is ERC20Pausable, Ownable {
     using SafeMath for uint256;

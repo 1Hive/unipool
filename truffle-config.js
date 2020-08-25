@@ -11,7 +11,10 @@ TruffleConfig.networks.development = {
     gasPrice: 1000000000, // web3.eth.gasPrice
 };
 
-//TruffleConfig.networks.mainnet.gasPrice = 60e9;
+TruffleConfig.networks.rinkeby.skipDryRun = true;
+TruffleConfig.networks.rinkeby.gasPrice = 1e11; // 100 Gwei
+
+TruffleConfig.networks.mainnet.gasPrice = 1e11; // 100 Gwei
 
 TruffleConfig.compilers = {
     solc: {

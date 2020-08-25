@@ -22,6 +22,20 @@ Run tests with:
 $ npm run test
 ```
 
+### Deploy to Rinkeby
+
+Install all dependencies if not already installed:
+```
+$ npm install
+```
+
+Deploy to mainnet (requires adding an infura link and private key that holds ETH to a local file as specified here 
+https://hack.aragon.org/docs/cli-intro#set-a-private-key):
+```
+$ npx truffle deploy --network rinkeby
+```
+The above command will send both mock UOS and Uniswap tokens to the senders address for testing purposes
+
 ### Deploy to Mainnet
 
 Install all dependencies if not already installed:
