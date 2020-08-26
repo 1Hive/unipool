@@ -12,38 +12,41 @@
 
 ### Run tests
 
-Install all dependencies in the root directory execute:
+1) Install all dependencies in the root directory execute:
 ```
 $ npm install
 ```
 
-Run tests with:
+2) Run tests with:
 ```
 $ npm run test
 ```
 
 ### Deploy to Rinkeby
 
-Install all dependencies if not already installed:
+1) Install all dependencies if not already installed:
 ```
 $ npm install
 ```
 
-Deploy to mainnet (requires adding an infura link and private key that holds ETH to a local file as specified here 
+2) Deploy to mainnet (requires adding an infura link and private key that holds ETH to a local file as specified here 
 https://hack.aragon.org/docs/cli-intro#set-a-private-key):
 ```
 $ npx truffle deploy --network rinkeby
 ```
-The above command will send both mock UOS and Uniswap tokens to the senders address for testing purposes
+The above command will send both mock UOS and Uniswap tokens to the senders address for testing purposes.
 
 ### Deploy to Mainnet
 
-Install all dependencies if not already installed:
+1) Install all dependencies if not already installed:
 ```
 $ npm install
 ```
 
-Deploy to mainnet (requires adding an infura link and private key that holds ETH to a local file as specified here 
+2) Update the gas price to whatever is currently being accepted by the network in the `truffle-config.js` file.
+By default it is set to 100 Gwei but there's a chance the price will be higher.
+
+3) Deploy to mainnet (requires adding an infura link and private key that holds ETH to a local file as specified here 
 https://hack.aragon.org/docs/cli-intro#set-a-private-key):
 ```
 $ npx truffle deploy --network mainnet
