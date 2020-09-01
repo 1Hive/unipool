@@ -40,10 +40,10 @@ TruffleConfig.mocha = { // https://github.com/cgewecke/eth-gas-reporter
     }
 };
 
-TruffleConfig.plugins = ['solidity-coverage', 'truffle-plugin-verify'];
+TruffleConfig.plugins = ['truffle-plugin-verify'];
 
 TruffleConfig.api_keys = {
-    etherscan: process.env.ETHERSCAN_API_KEY
+    etherscan: "Etherscan API Key"
 };
 
 module.exports = TruffleConfig;
