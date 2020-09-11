@@ -2,7 +2,7 @@ const { BN, expectRevert, time } = require('openzeppelin-test-helpers');
 const { expect } = require('chai');
 
 const UniswapToken = artifacts.require('UniswapTokenMock');
-const UltraToken = artifacts.require('UltraTokenMock');
+const TradedToken = artifacts.require('HoneyTokenMock');
 const Unipool = artifacts.require('UnipoolMock');
 
 async function timeIncreaseTo (seconds) {
@@ -44,16 +44,15 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
     describe('Unipool', async function () {
         beforeEach(async function () {
             this.uniswapToken = await UniswapToken.new();
-            this.ultraToken = await UltraToken.new(wallet1);
-            this.unipool = await Unipool.new(this.uniswapToken.address, this.ultraToken.address);
+            this.tradedToken = await TradedToken.new(wallet1);
+            this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address);
 
-            await this.unipool.setRewardDistribution(wallet1);
             await this.uniswapToken.mint(wallet1, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet2, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet3, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet4, web3.utils.toWei('1000'));
 
-            await this.ultraToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
+            await this.tradedToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet2 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet3 });

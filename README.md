@@ -1,14 +1,8 @@
-# Ultra Unipool 
+# Honey Unipool 
 
-#### Ultra Token: https://etherscan.io/token/0xd13c7342e1ef687c5ad21b27c2b65d772cab5c8c
+#### HNY Token: https://blockscout.com/poa/xdai/address/0x71850b7E9Ee3f13Ab46d67167341E4bDc905Eef9/
 
-#### Ultra Uniswap Exchange: https://uniswap.info/pair/0x42d52847be255eacee8c3f96b3b223c0b3cc0438
-
-- Number of tokens to send to the rewards contract: ~50k$ `Ultra Token will send exact number`
-- Duration of rewards: 30 days
-- Start time (time or block): ASAP
-- Emission strategy (Halving model or Linear emission): linear emission
-- Pool address (needs to be done before the rewards contract is deployed): https://uniswap.info/pair/0x42d52847be255eacee8c3f96b3b223c0b3cc0438
+#### HNY Uniswap Exchange: https://info.honeyswap.org/pair/0x4505b262dc053998c10685dc5f9098af8ae5c8ad
 
 ### Run tests
 
@@ -34,7 +28,7 @@ https://hack.aragon.org/docs/cli-intro#set-a-private-key:
 ```
 $ npx truffle deploy --network rinkeby
 ```
-The above command will send both mock UOS and Uniswap tokens to the senders address for testing purposes.
+The above command will send both mock HNY and Uniswap tokens to the senders address for testing purposes.
 
 ### Deploy to Mainnet
 
@@ -65,7 +59,7 @@ use MetaMask and their contract interface to do this. Otherwise use your preferr
 
 2) Add a reward amount by going to the Etherscan UI at the Unipool contract address, connecting the MetaMask account 
 and excuting `notifyRewardAmount(amount)` with the amount to reward. Remember the amount is padded with 18 zeros. Eg a reward
-of 1000 UOS tokens would be 1000000000000000000000. 
+of 1000 HNY tokens would be 1000000000000000000000. 
 
 
 

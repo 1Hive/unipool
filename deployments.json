@@ -1,7 +1,0 @@
-{
-    "rinkeby": {
-        "UltraTokenMock": "0x2d1E6c723aC22cA24148d4418dedf9eB41BFDEe7",
-        "UniswapTokenMock": "0xB3F6C5EedF7968EF99d472A227D31DDaA5E00C02",
-        "UnipoolMock": "0x67cc23367D48FBea818bfaCD3A314779A0Ab767e"
-    }
-}
