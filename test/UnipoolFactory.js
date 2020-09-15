@@ -18,8 +18,8 @@ contract('UnipoolFactory', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         });
 
         it('does not allow duplicate Unipools', async function () {
-            expect(await this.factory.createUnipool(this.uniswapToken.address)).to.be.a('string');
-            expectRevert(await this.factory.createUnipool(this.uniswapToken.address), 'Pool already exists.');
+            await this.factory.createUnipool(this.uniswapToken.address);
+            await expectRevert(this.factory.createUnipool(this.uniswapToken.address), 'Pool already exists.');
         });
     });
 });
