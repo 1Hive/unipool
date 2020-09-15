@@ -1,4 +1,5 @@
 const TruffleConfig = require('@aragon/truffle-config-v5/truffle-config')
+const HDWalletProvider = require('@truffle/hdwallet-provider')
 
 // See <http://truffleframework.com/docs/advanced/configuration>
 // to customize your Truffle configuration!
@@ -10,6 +11,17 @@ TruffleConfig.networks.development = {
     gas: 8000000,
     gasPrice: 1000000000, // web3.eth.gasPrice
 };
+
+TruffleConfig.networks.xdai = {
+   provider: function() {
+       return new HDWalletProvider(
+           process.env.MNEMONIC,
+           "https://dai.poa.network"
+       )
+   },
+   network_id: 100,
+   gas: 500000
+}
 
 TruffleConfig.networks.rinkeby.skipDryRun = true;
 TruffleConfig.networks.rinkeby.gasPrice = 1e11; // 100 Gwei
