@@ -20,7 +20,7 @@ TruffleConfig.networks.xdai = {
        )
    },
    network_id: 100,
-   gas: 500000
+   gas: 2000000
 }
 
 TruffleConfig.networks.rinkeby.skipDryRun = true;
