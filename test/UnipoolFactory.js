@@ -14,7 +14,7 @@ contract('UnipoolFactory', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         });
 
         it('creates a new Unipool for a given LP token', async function () {
-            expect(await this.factory.createUnipool(this.uniswapToken.address)).to.be.a('string');
+            await this.factory.createUnipool(this.uniswapToken.address);
         });
 
         it('does not allow duplicate Unipools', async function () {
