@@ -16,21 +16,7 @@ $ npm install
 $ npm run test
 ```
 
-### Deploy to Rinkeby
-
-1) Install all dependencies if not already installed:
-```
-$ npm install
-```
-
-2) Deploy to Rinkeby. Requires adding an infura link and private key that holds ETH to a local file as specified here 
-https://hack.aragon.org/docs/cli-intro#set-a-private-key:
-```
-$ npx truffle deploy --network rinkeby
-```
-The above command will send both mock HNY and Uniswap tokens to the senders address for testing purposes.
-
-### Deploy to Mainnet
+### Deploy to Xdai
 
 1) Install all dependencies if not already installed:
 ```
@@ -38,18 +24,11 @@ $ npm install
 ```
 
 2) Update the gas price to whatever is currently being accepted by the network in the `truffle-config.js` file.
-By default it is set to 100 Gwei but there's a chance the price will be higher.
 
-3) Deploy to Mainnet. Requires adding an infura link and private key that holds ETH to a local file as specified here 
-https://hack.aragon.org/docs/cli-intro#set-a-private-key:
-```
-$ npx truffle deploy --network mainnet
-```
+3) Deploy to xDai. Set your private key mnemonic in the `MNEMONIC` environment variable.
 
-4) Verify on Etherscan. Requires copying an Etherscan API key into `truffle-config.js` at `TruffleConfig.api_keys.etherscan`,
- they are free and require an account here https://etherscan.io/:
 ```
-$ npx truffle run verify Unipool --network mainnet
+$ npx truffle deploy --network xdai
 ```
 
 ### Create a reward (will be spread across 30 days)
