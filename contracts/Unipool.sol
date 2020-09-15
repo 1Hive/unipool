@@ -36,6 +36,7 @@ contract LPTokenWrapper {
 }
 
 contract Unipool is LPTokenWrapper {
+    // HONEY
     IERC20 public tradedToken = IERC20(0x71850b7E9Ee3f13Ab46d67167341E4bDc905Eef9);
     uint256 public constant DURATION = 30 days;
 
@@ -59,6 +60,10 @@ contract Unipool is LPTokenWrapper {
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
         }
         _;
+    }
+
+    constructor(IERC20 _uniswapTokenExchange) public {
+        uniswapTokenExchange = _uniswapTokenExchange;
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
