@@ -9,7 +9,7 @@ contract UnipoolFactory {
 
     function createUnipool(
         address _uniswapTokenExchange
-    ) public returns (address) {
+    ) public returns (address, address) {
         require(pools[_uniswapTokenExchange] == address(0), "Pool already exists.");
         pools[_uniswapTokenExchange] = address(
             new Unipool(IERC20(_uniswapTokenExchange))
@@ -17,8 +17,8 @@ contract UnipoolFactory {
 
         // NOTICE(onbjerg): This is temporary until conviction voting can
         // call `Unipool#notifyRewardAmount` itself
-        new UnipoolBalanceProxy(Unipool(pools[_uniswapTokenExchange]));
+        UnipoolBalanceProxy proxy = new UnipoolBalanceProxy(Unipool(pools[_uniswapTokenExchange]));
 
-        return pools[_uniswapTokenExchange];
+        return (pools[_uniswapTokenExchange], address(proxy));
     }
 }
