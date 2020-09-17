@@ -5,20 +5,39 @@ import "./Unipool.sol";
 import "./UnipoolBalanceProxy.sol";
 
 contract UnipoolFactory {
-    mapping(address => address) public pools;
+    struct PoolInfo {
+        Unipool pool;
+        UnipoolBalanceProxy proxy;
+    }
+
+    mapping(address => PoolInfo) public pools;
 
     function createUnipool(
-        address _uniswapTokenExchange
-    ) public returns (address, address) {
-        require(pools[_uniswapTokenExchange] == address(0), "Pool already exists.");
-        pools[_uniswapTokenExchange] = address(
-            new Unipool(IERC20(_uniswapTokenExchange))
+        IERC20 _uniswapTokenExchange
+    ) public returns (address) {
+        require(address(pools[address(_uniswapTokenExchange)].pool) == address(0), "Pool already exists");
+        pools[address(_uniswapTokenExchange)].pool = new Unipool(_uniswapTokenExchange);
+
+        return address(pools[address(_uniswapTokenExchange)].pool);
+    }
+
+    function createBalanceProxy(
+        IERC20 _uniswapTokenExchange
+    ) public returns (address) {
+        require(address(pools[address(_uniswapTokenExchange)].pool) != address(0), "Pool doesn't exist");
+        pools[address(_uniswapTokenExchange)].proxy = new UnipoolBalanceProxy(
+            pools[address(_uniswapTokenExchange)].pool
         );
 
-        // NOTICE(onbjerg): This is temporary until conviction voting can
-        // call `Unipool#notifyRewardAmount` itself
-        UnipoolBalanceProxy proxy = new UnipoolBalanceProxy(Unipool(pools[_uniswapTokenExchange]));
+        return address(pools[address(_uniswapTokenExchange)].proxy);
+    }
 
-        return (pools[_uniswapTokenExchange], address(proxy));
+    function createUnipoolWithProxy(
+        IERC20 _uniswapTokenExchange
+    ) public returns (address, address) {
+        address pool = createUnipool(_uniswapTokenExchange);
+        address proxy = createBalanceProxy(_uniswapTokenExchange);
+
+        return (pool, proxy);
     }
 }
