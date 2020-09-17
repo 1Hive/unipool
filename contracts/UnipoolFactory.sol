@@ -5,6 +5,7 @@ import "./Unipool.sol";
 import "./UnipoolBalanceProxy.sol";
 
 contract UnipoolFactory {
+
     struct PoolInfo {
         Unipool pool;
         UnipoolBalanceProxy proxy;
@@ -14,29 +15,29 @@ contract UnipoolFactory {
 
     function createUnipool(
         IERC20 _uniswapTokenExchange
-    ) public returns (address) {
-        require(address(pools[address(_uniswapTokenExchange)].pool) == address(0), "Pool already exists");
-        pools[address(_uniswapTokenExchange)].pool = new Unipool(_uniswapTokenExchange);
+    ) public returns (Unipool) {
+        PoolInfo storage poolInfo = pools[address(_uniswapTokenExchange)];
+        require(address(poolInfo.pool) == address(0), "Pool already exists");
 
-        return address(pools[address(_uniswapTokenExchange)].pool);
+        poolInfo.pool = new Unipool(_uniswapTokenExchange);
+        return poolInfo.pool;
     }
 
     function createBalanceProxy(
         IERC20 _uniswapTokenExchange
-    ) public returns (address) {
-        require(address(pools[address(_uniswapTokenExchange)].pool) != address(0), "Pool doesn't exist");
-        pools[address(_uniswapTokenExchange)].proxy = new UnipoolBalanceProxy(
-            pools[address(_uniswapTokenExchange)].pool
-        );
+    ) public returns (UnipoolBalanceProxy) {
+        PoolInfo storage poolInfo = pools[address(_uniswapTokenExchange)];
+        require(address(poolInfo.pool) != address(0), "Pool doesn't exist");
 
-        return address(pools[address(_uniswapTokenExchange)].proxy);
+        poolInfo.proxy = new UnipoolBalanceProxy(poolInfo.pool);
+        return poolInfo.proxy;
     }
 
     function createUnipoolWithProxy(
         IERC20 _uniswapTokenExchange
-    ) public returns (address, address) {
-        address pool = createUnipool(_uniswapTokenExchange);
-        address proxy = createBalanceProxy(_uniswapTokenExchange);
+    ) public returns (Unipool, UnipoolBalanceProxy) {
+        Unipool pool = createUnipool(_uniswapTokenExchange);
+        UnipoolBalanceProxy proxy = createBalanceProxy(_uniswapTokenExchange);
 
         return (pool, proxy);
     }
