@@ -248,7 +248,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             const originalRewardRate = await this.unipool.rewardRate();
             await timeIncreaseTo(this.started.add(time.duration.days(30)));
 
-            this.unipool.notifyRewardAmount(web3.utils.toWei((originalAwardAmount - 9000).toString()), { from: wallet1 });
+            await this.unipool.notifyRewardAmount(web3.utils.toWei((originalAwardAmount - 9000).toString()), { from: wallet1 });
 
             expect(await this.unipool.rewardRate()).to.be.bignumber.lessThan(originalRewardRate);
         });
