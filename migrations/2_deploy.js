@@ -2,7 +2,8 @@ const UnipoolFactory = artifacts.require('./UnipoolFactory.sol');
 const Unipool = artifacts.require('./Unipool.sol');
 const UnipoolMock = artifacts.require('./UnipoolMock.sol');
 const HoneyTokenMock = artifacts.require('./HoneyTokenMock.sol');
-const UniswapTokenMock = artifacts.require('./UniswapTokenMock.sol');
+const OtherTokenMock = artifacts.require('./UniswapTokenMock.sol');
+const UniswapPairMock = artifacts.require('./UniswapPairMock.sol');
 const UniswapRouterMock = artifacts.require('./UniswapRouterMock.sol');
 
 const argValue = (arg, defaultValue) => process.argv.includes(arg) ? process.argv[process.argv.indexOf(arg) + 1] : defaultValue;
@@ -16,9 +17,10 @@ module.exports = async function (deployer) {
         const BN = web3.utils.toBN;
 
         await deployer.deploy(HoneyTokenMock, senderAccount);
+        await deployer.deploy(OtherTokenMock);
+        await deployer.deploy(UniswapPairMock, HoneyTokenMock.address, OtherTokenMock.address);
 
-        await deployer.deploy(UniswapTokenMock);
-        const uniswapToken = await UniswapTokenMock.at(UniswapTokenMock.address);
+        const uniswapToken = await UniswapPairMock.at(UniswapPairMock.address);
         await uniswapToken.mint(senderAccount, BN(1000).mul(BN(10).pow(BN(18))));
 
         await deployer.deploy(UniswapRouterMock);

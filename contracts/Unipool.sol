@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./external_interfaces/IUniswapV2Router01.sol";
+import "./external_interfaces/IUniswapV2Pair.sol";
 
 contract LPTokenWrapper {
     using SafeMath for uint256;
@@ -43,6 +44,7 @@ contract LPTokenWrapper {
 contract Unipool is LPTokenWrapper {
     // HONEY
     IERC20 public tradedToken = IERC20(0x71850b7E9Ee3f13Ab46d67167341E4bDc905Eef9);
+    IERC20 public reinvestableToken = IERC20(address(0));
     IUniswapV2Router01 public uniswapRouter = IUniswapV2Router01(0x1C232F01118CB8B424793ae03F870aa7D0ac7f77);
 
     uint256 public constant DURATION = 30 days;
@@ -73,6 +75,21 @@ contract Unipool is LPTokenWrapper {
     constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter) public {
         uniswapTokenExchange = _uniswapTokenExchange;
         uniswapRouter = _uniswapRouter;
+
+        IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
+
+        if (pair.token0() != address(tradedToken) && pair.token1() != address(tradedToken)) {
+            // We can only reinvest if we're giving rewards in one side of the pair (currently)
+            reinvestableToken = IERC20(address(0));
+        } else {
+            if (pair.token0() == address(tradedToken)) {
+                reinvestableToken = IERC20(pair.token1());
+            } else {
+                reinvestableToken = IERC20(pair.token0());
+            }
+            tradedToken.approve(address(uniswapRouter), (2**256)-1);
+            reinvestableToken.approve(address(uniswapRouter), (2**256)-1);
+        }
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
@@ -150,10 +167,10 @@ contract Unipool is LPTokenWrapper {
     }
     
     function reinvest(uint256 minTokens) public updateReward(msg.sender) {
+        require(address(reinvestableToken) != address(0), "Farmed token is not one side of pair");
+
         uint256 reward = earned(msg.sender);
-        if (reward == 0) {
-            return;
-        }
+        require(reward > 0, "Nothing to reinvest");
         
         (uint256 liquidity, uint256 remainingReward) = poolHny(reward, minTokens);
         super.stakeInternal(liquidity);
@@ -168,13 +185,13 @@ contract Unipool is LPTokenWrapper {
         
         address[] memory path = new address[](2);
         path[0] = address(tradedToken);
-        path[1] = address(uniswapTokenExchange);
+        path[1] = address(reinvestableToken);
         uint[] memory amounts = uniswapRouter.swapExactTokensForTokens(hnyToConvert, minTokens, path, address(this), block.timestamp);
         
         // add liquidity
         (uint a, uint b, uint liquidity) = 
             uniswapRouter.addLiquidity(address(tradedToken),
-                                       address(uniswapTokenExchange),
+                                       address(reinvestableToken),
                                        hnyToConvert,
                                        amounts[1],
                                        0, 0, // min

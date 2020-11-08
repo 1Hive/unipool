@@ -1,7 +1,8 @@
 const { BN, expectRevert, time } = require('openzeppelin-test-helpers');
 const { expect } = require('chai');
 
-const UniswapToken = artifacts.require('UniswapTokenMock');
+const UniswapPair = artifacts.require('UniswapPairMock');
+const OtherToken = artifacts.require('UniswapTokenMock');
 const TradedToken = artifacts.require('HoneyTokenMock');
 const Unipool = artifacts.require('UnipoolMock');
 const UniswapRouter = artifacts.require('UniswapRouterMock');
@@ -44,8 +45,9 @@ require('chai').use(function (chai, utils) {
 contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
     describe('Unipool', async function () {
         beforeEach(async function () {
-            this.uniswapToken = await UniswapToken.new();
+            this.otherToken = await OtherToken.new();
             this.tradedToken = await TradedToken.new(wallet1);
+            this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
             this.router = await UniswapRouter.new();
             this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address, this.router.address);
 

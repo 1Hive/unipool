@@ -4,8 +4,8 @@ import "../../contracts/Unipool.sol";
 
 contract UnipoolMock is Unipool {
 
-    constructor(IERC20 _uniswapTokenExchange, IERC20 _tradedToken, IUniswapV2Router01 _uniswapRouter) Unipool(_uniswapTokenExchange, _uniswapRouter) public {
-        uniswapTokenExchange = _uniswapTokenExchange;
+    constructor(IUniswapV2Pair _uniswapTokenExchange, IERC20 _tradedToken, IUniswapV2Router01 _uniswapRouter) Unipool(IERC20(address(_uniswapTokenExchange)), _uniswapRouter) public {
+        uniswapTokenExchange = IERC20(address(_uniswapTokenExchange));
         tradedToken = _tradedToken;
     }
 }
