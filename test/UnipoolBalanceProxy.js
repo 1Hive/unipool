@@ -5,13 +5,15 @@ const UniswapToken = artifacts.require('UniswapTokenMock');
 const TradedToken = artifacts.require('HoneyTokenMock');
 const Unipool = artifacts.require('UnipoolMock');
 const UnipoolBalanceProxy = artifacts.require('UnipoolBalanceProxyMock');
+const UniswapRouter = artifacts.require('UniswapRouterMock');
 
 contract('UnipoolFactory', function ([_, wallet1, wallet2, wallet3, wallet4]) {
     describe('UnipoolFactory', async function () {
         beforeEach(async function () {
             this.uniswapToken = await UniswapToken.new();
             this.tradedToken = await TradedToken.new(wallet1);
-            this.pool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address);
+            this.router = await UniswapRouter.new();
+            this.pool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address, this.router.address);
             this.proxy = await UnipoolBalanceProxy.new(this.pool.address, this.tradedToken.address);
 
             await this.tradedToken.mint(wallet1, web3.utils.toWei('1000'));

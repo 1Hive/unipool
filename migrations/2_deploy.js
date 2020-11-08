@@ -3,6 +3,7 @@ const Unipool = artifacts.require('./Unipool.sol');
 const UnipoolMock = artifacts.require('./UnipoolMock.sol');
 const HoneyTokenMock = artifacts.require('./HoneyTokenMock.sol');
 const UniswapTokenMock = artifacts.require('./UniswapTokenMock.sol');
+const UniswapRouterMock = artifacts.require('./UniswapRouterMock.sol');
 
 const argValue = (arg, defaultValue) => process.argv.includes(arg) ? process.argv[process.argv.indexOf(arg) + 1] : defaultValue;
 const network = () => argValue('--network', 'local');
@@ -20,6 +21,8 @@ module.exports = async function (deployer) {
         const uniswapToken = await UniswapTokenMock.at(UniswapTokenMock.address);
         await uniswapToken.mint(senderAccount, BN(1000).mul(BN(10).pow(BN(18))));
 
-        await deployer.deploy(UnipoolMock, uniswapToken.address, HoneyTokenMock.address);
+        await deployer.deploy(UniswapRouterMock);
+
+        await deployer.deploy(UnipoolMock, uniswapToken.address, HoneyTokenMock.address, UniswapRouterMock.address);
     }
 };

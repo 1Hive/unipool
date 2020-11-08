@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "./external_interfaces/IUniswapV2Router01.sol";
 
 contract LPTokenWrapper {
     using SafeMath for uint256;
@@ -23,9 +24,13 @@ contract LPTokenWrapper {
     }
 
     function stake(uint256 amount) public {
+        stakeInternal(amount);
+        uniswapTokenExchange.safeTransferFrom(msg.sender, address(this), amount);
+    }
+
+    function stakeInternal(uint256 amount) internal {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        uniswapTokenExchange.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) public {
@@ -38,6 +43,8 @@ contract LPTokenWrapper {
 contract Unipool is LPTokenWrapper {
     // HONEY
     IERC20 public tradedToken = IERC20(0x71850b7E9Ee3f13Ab46d67167341E4bDc905Eef9);
+    IUniswapV2Router01 public uniswapRouter = IUniswapV2Router01(0x1C232F01118CB8B424793ae03F870aa7D0ac7f77);
+
     uint256 public constant DURATION = 30 days;
 
     uint256 public periodFinish = 0;
@@ -51,6 +58,7 @@ contract Unipool is LPTokenWrapper {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+    event ReinvestedReward(address indexed user, uint256 reward, uint256 lpStaked);
 
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
@@ -62,8 +70,9 @@ contract Unipool is LPTokenWrapper {
         _;
     }
 
-    constructor(IERC20 _uniswapTokenExchange) public {
+    constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter) public {
         uniswapTokenExchange = _uniswapTokenExchange;
+        uniswapRouter = _uniswapRouter;
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
@@ -138,5 +147,40 @@ contract Unipool is LPTokenWrapper {
         tradedToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit RewardAdded(_amount);
+    }
+    
+    function reinvest(uint256 minTokens) public updateReward(msg.sender) {
+        uint256 reward = earned(msg.sender);
+        if (reward == 0) {
+            return;
+        }
+        
+        (uint256 liquidity, uint256 remainingReward) = poolHny(reward, minTokens);
+        super.stakeInternal(liquidity);
+        rewards[msg.sender] = remainingReward;
+
+        emit ReinvestedReward(msg.sender, reward.sub(remainingReward), liquidity);
+    }
+    
+    function poolHny(uint256 hnyAmt, uint256 minTokens) private returns(uint256 lpTokens, uint256 remainingHny) {
+        // convert half to target token
+        uint256 hnyToConvert = hnyAmt.div(2);
+        
+        address[] memory path = new address[](2);
+        path[0] = address(tradedToken);
+        path[1] = address(uniswapTokenExchange);
+        uint[] memory amounts = uniswapRouter.swapExactTokensForTokens(hnyToConvert, minTokens, path, address(this), block.timestamp);
+        
+        // add liquidity
+        (uint a, uint b, uint liquidity) = 
+            uniswapRouter.addLiquidity(address(tradedToken),
+                                       address(uniswapTokenExchange),
+                                       hnyToConvert,
+                                       amounts[1],
+                                       0, 0, // min
+                                       address(this),
+                                       block.timestamp);
+        
+        return (liquidity, hnyAmt.sub(amounts[0]));
     }
 }

@@ -4,6 +4,7 @@ const { expect } = require('chai');
 const UniswapToken = artifacts.require('UniswapTokenMock');
 const TradedToken = artifacts.require('HoneyTokenMock');
 const Unipool = artifacts.require('UnipoolMock');
+const UniswapRouter = artifacts.require('UniswapRouterMock');
 
 async function timeIncreaseTo (seconds) {
     const delay = 10 - new Date().getMilliseconds();
@@ -45,7 +46,8 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         beforeEach(async function () {
             this.uniswapToken = await UniswapToken.new();
             this.tradedToken = await TradedToken.new(wallet1);
-            this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address);
+            this.router = await UniswapRouter.new();
+            this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address, this.router.address);
 
             await this.uniswapToken.mint(wallet1, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet2, web3.utils.toWei('1000'));
