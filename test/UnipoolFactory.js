@@ -15,7 +15,7 @@ contract('UnipoolFactory', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             this.tradedToken = await TradedToken.new(wallet1);
             this.otherToken = await OtherToken.new();
             this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
-            this.factory = await UnipoolFactory.new();
+            this.factory = await UnipoolFactory.new(this.tradedToken.address);
             this.router = await UniswapRouter.new();
         });
 

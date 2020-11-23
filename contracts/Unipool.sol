@@ -72,9 +72,10 @@ contract Unipool is LPTokenWrapper {
         _;
     }
 
-    constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter) public {
+    constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter, IERC20 _tradedToken) public {
         uniswapTokenExchange = _uniswapTokenExchange;
         uniswapRouter = _uniswapRouter;
+        tradedToken = _tradedToken;
 
         IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
 
@@ -173,8 +174,8 @@ contract Unipool is LPTokenWrapper {
         require(reward > 0, "Nothing to reinvest");
         
         (uint256 liquidity, uint256 remainingReward) = poolHny(reward, minTokens);
-        super.stakeInternal(liquidity);
         rewards[msg.sender] = remainingReward;
+        super.stakeInternal(liquidity);
 
         emit ReinvestedReward(msg.sender, reward.sub(remainingReward), liquidity);
     }
@@ -187,17 +188,27 @@ contract Unipool is LPTokenWrapper {
         path[0] = address(tradedToken);
         path[1] = address(reinvestableToken);
         uint[] memory amounts = uniswapRouter.swapExactTokensForTokens(hnyToConvert, minTokens, path, address(this), block.timestamp);
+
+        // We exchanged this amount of honey in the swap, remove it from the current balance
+        hnyAmt = hnyAmt.sub(amounts[0]);
+
+        // Use our whole balance of `reinvestableToken`, not just what we got back from the swap.
+        // This makes sure that shavings of `reinvestableToken` don't accumulate, dead, in our wallet.
+        // The next user to call this method will always either leave a few shavings themselves,
+        // or will receive the balance back in `tradedToken` instead, which we do account for per-user.
+        uint256 reinvestableBalance = reinvestableToken.balanceOf(address(this));
         
         // add liquidity
         (uint a, uint b, uint liquidity) = 
             uniswapRouter.addLiquidity(address(tradedToken),
                                        address(reinvestableToken),
                                        hnyToConvert,
-                                       amounts[1],
+                                       reinvestableBalance,
                                        0, 0, // min
                                        address(this),
                                        block.timestamp);
         
-        return (liquidity, hnyAmt.sub(amounts[0]));
+        // now also remove the amount of liquidity we added for the final total
+        return (liquidity, hnyAmt.sub(a));
     }
 }

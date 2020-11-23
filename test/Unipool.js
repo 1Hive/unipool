@@ -256,5 +256,39 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
 
             expect(await this.unipool.rewardRate()).to.be.bignumber.lessThan(originalRewardRate);
         });
+
+        it('requires nonzero reward to reinvest', async function () {
+            const originalAwardAmount = 10000;
+            await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
+
+            await timeIncreaseTo(this.started.add(time.duration.days(30)));
+
+            await expectRevert(this.unipool.reinvest(web3.utils.toWei('1'), { from: wallet1 }),
+                'Nothing to reinvest');
+        })
+
+        it('consumes reward to reinvest', async function () {
+            const originalAwardAmount = 10000;
+            await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
+            await this.unipool.stake(web3.utils.toWei('1'), { from: wallet1 });
+
+            await timeIncreaseTo(this.started.add(time.duration.days(30)));
+
+            await this.unipool.reinvest(web3.utils.toWei((originalAwardAmount / 2).toString()), { from: wallet1 });
+
+            expect(await this.unipool.earned(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('0'));
+        })
+
+        it('increases stake when reinvesting', async function () {
+            const originalAwardAmount = 10000;
+            await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
+            await this.unipool.stake(web3.utils.toWei('1'), { from: wallet1 });
+
+            await timeIncreaseTo(this.started.add(time.duration.days(30)));
+
+            await this.unipool.reinvest(web3.utils.toWei((originalAwardAmount / 2).toString()), { from: wallet1 });
+
+            expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.greaterThan(web3.utils.toWei('1'));
+        })
     });
 });

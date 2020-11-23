@@ -13,7 +13,7 @@ contract UniswapRouterMock is IUniswapV2Router01 {
         address to,
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity) {
-        return (0, 0, 0);
+        return (amountADesired, amountBDesired, 1);
     }
 
     function swapExactTokensForTokens(
