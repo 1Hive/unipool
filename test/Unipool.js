@@ -48,19 +48,27 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             this.otherToken = await OtherToken.new();
             this.tradedToken = await TradedToken.new(wallet1);
             this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
-            this.router = await UniswapRouter.new();
+            this.router = await UniswapRouter.new(web3.utils.toWei('100000000'), web3.utils.toWei('100000000'));
             this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address, this.router.address);
+
+            this.otherToken2 = await OtherToken.new();
+            this.uniswapToken2 = await UniswapPair.new(this.otherToken2.address, this.otherToken.address);
+            this.unipoolForeign = await Unipool.new(this.uniswapToken2.address, this.tradedToken.address, this.router.address);
 
             await this.uniswapToken.mint(wallet1, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet2, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet3, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet4, web3.utils.toWei('1000'));
+            await this.uniswapToken2.mint(wallet1, web3.utils.toWei('1000'));
 
             await this.tradedToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet2 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet3 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet4 });
+
+            await this.tradedToken.approve(this.unipoolForeign.address, new BN(2).pow(new BN(255)), { from: wallet1 });
+            await this.uniswapToken2.approve(this.unipoolForeign.address, new BN(2).pow(new BN(255)), { from: wallet1 });
 
             this.started = (await time.latest()).addn(10);
             await timeIncreaseTo(this.started);
@@ -257,15 +265,24 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.rewardRate()).to.be.bignumber.lessThan(originalRewardRate);
         });
 
-        it('requires nonzero reward to reinvest', async function () {
+        it('reverts when reinvesting an unstaked user', async function () {
             const originalAwardAmount = 10000;
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
 
             await timeIncreaseTo(this.started.add(time.duration.days(30)));
 
-            await expectRevert(this.unipool.reinvest(web3.utils.toWei('1'), { from: wallet1 }),
+            await expectRevert(this.unipool.reinvestReward({ from: wallet1 }),
                 'Nothing to reinvest');
-        })
+        });
+
+        it('reverts when reinvesting a zero balance', async function () {
+            const originalAwardAmount = 10000;
+            await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
+            await this.unipool.stake(web3.utils.toWei('1'), { from: wallet1 });
+
+            await expectRevert(this.unipool.reinvestReward({ from: wallet1 }),
+                'Nothing to reinvest');
+        });
 
         it('consumes reward to reinvest', async function () {
             const originalAwardAmount = 10000;
@@ -274,10 +291,10 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
 
             await timeIncreaseTo(this.started.add(time.duration.days(30)));
 
-            await this.unipool.reinvest(web3.utils.toWei((originalAwardAmount / 2).toString()), { from: wallet1 });
+            await this.unipool.reinvestReward({ from: wallet1 });
 
             expect(await this.unipool.earned(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('0'));
-        })
+        });
 
         it('increases stake when reinvesting', async function () {
             const originalAwardAmount = 10000;
@@ -286,9 +303,20 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
 
             await timeIncreaseTo(this.started.add(time.duration.days(30)));
 
-            await this.unipool.reinvest(web3.utils.toWei((originalAwardAmount / 2).toString()), { from: wallet1 });
+            await this.unipool.reinvestReward({ from: wallet1 });
 
-            expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.greaterThan(web3.utils.toWei('1'));
-        })
+            expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('2'));
+        });
+
+        it('reverts when the reward token isn\'t part of the pair', async function () {
+            const originalAwardAmount = 10000;
+            await this.unipoolForeign.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
+            await this.unipoolForeign.stake(web3.utils.toWei('1'), { from: wallet1 });
+
+            await timeIncreaseTo(this.started.add(time.duration.days(30)));
+
+            await expectRevert(this.unipoolForeign.reinvestReward({ from: wallet1 }),
+                'Reward token is not one side of pair');
+        });
     });
 });

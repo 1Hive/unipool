@@ -42,12 +42,12 @@ contract LPTokenWrapper {
 }
 
 contract Unipool is LPTokenWrapper {
-    // HONEY
-    IERC20 public tradedToken = IERC20(0x71850b7E9Ee3f13Ab46d67167341E4bDc905Eef9);
-    IERC20 public reinvestableToken = IERC20(address(0));
-    IUniswapV2Router01 public uniswapRouter = IUniswapV2Router01(0x1C232F01118CB8B424793ae03F870aa7D0ac7f77);
+    IERC20 public rewardToken;
+    IERC20 public reinvestableToken;
+    IUniswapV2Router01 public uniswapRouter;
 
     uint256 public constant DURATION = 30 days;
+    uint256 public constant MAX_SLIPPAGE_BASIS_POINTS = 200;
 
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -72,24 +72,25 @@ contract Unipool is LPTokenWrapper {
         _;
     }
 
-    constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter, IERC20 _tradedToken) public {
+    constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter, IERC20 _rewardToken) public {
         uniswapTokenExchange = _uniswapTokenExchange;
         uniswapRouter = _uniswapRouter;
-        tradedToken = _tradedToken;
+        rewardToken = _rewardToken;
 
+        reinvestableToken = _getReinvestableToken();
+    }
+
+    function _getReinvestableToken() private view returns (IERC20) {
         IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
-
-        if (pair.token0() != address(tradedToken) && pair.token1() != address(tradedToken)) {
+        if (pair.token0() != address(rewardToken) && pair.token1() != address(rewardToken)) {
             // We can only reinvest if we're giving rewards in one side of the pair (currently)
-            reinvestableToken = IERC20(address(0));
+            return IERC20(address(0));
+        } 
+
+        if (pair.token0() == address(rewardToken)) {
+            return IERC20(pair.token1());
         } else {
-            if (pair.token0() == address(tradedToken)) {
-                reinvestableToken = IERC20(pair.token1());
-            } else {
-                reinvestableToken = IERC20(pair.token0());
-            }
-            tradedToken.approve(address(uniswapRouter), (2**256)-1);
-            reinvestableToken.approve(address(uniswapRouter), (2**256)-1);
+            return IERC20(pair.token0());
         }
     }
 
@@ -141,7 +142,7 @@ contract Unipool is LPTokenWrapper {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            tradedToken.safeTransfer(msg.sender, reward);
+            rewardToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -162,53 +163,82 @@ contract Unipool is LPTokenWrapper {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
 
-        tradedToken.safeTransferFrom(msg.sender, address(this), _amount);
+        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit RewardAdded(_amount);
     }
     
-    function reinvest(uint256 minTokens) public updateReward(msg.sender) {
-        require(address(reinvestableToken) != address(0), "Farmed token is not one side of pair");
+    function reinvestReward() public updateReward(msg.sender) {
+        require(address(reinvestableToken) != address(0), "Reward token is not one side of pair");
 
         uint256 reward = earned(msg.sender);
         require(reward > 0, "Nothing to reinvest");
         
-        (uint256 liquidity, uint256 remainingReward) = poolHny(reward, minTokens);
+        (uint256 liquidity, uint256 remainingReward) = _poolReward(reward);
         rewards[msg.sender] = remainingReward;
         super.stakeInternal(liquidity);
 
         emit ReinvestedReward(msg.sender, reward.sub(remainingReward), liquidity);
     }
+
+    event Foo(uint256 i, uint256 t);
+
+    function _calculateSlippageForRewardSale(uint256 tradeSize) private view returns(uint slippage, uint expectedTokens) {
+        IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
+        (uint256 rewardReserve, uint256 foreignReserve) = 
+            uniswapRouter.getReserves(address(pair.factory()), address(rewardToken), address(reinvestableToken));
+        uint256 immediatePrice = foreignReserve.div(rewardReserve).mul(tradeSize);
+        uint256 totalPrice = uniswapRouter.getAmountOut(tradeSize, rewardReserve, foreignReserve);
+
+        return (immediatePrice.sub(totalPrice).div(totalPrice).mul(10000), totalPrice);
+    }
     
-    function poolHny(uint256 hnyAmt, uint256 minTokens) private returns(uint256 lpTokens, uint256 remainingHny) {
+    function _poolReward(uint256 rewardAmount) private returns(uint256 liquidityTokens, uint256 remainingReward) {
         // convert half to target token
-        uint256 hnyToConvert = hnyAmt.div(2);
+        uint256 rewardToConvert = rewardAmount.div(2);
+
+        // approve the amount we're going to convert
+        rewardToken.approve(address(uniswapRouter), rewardToConvert);
         
         address[] memory path = new address[](2);
-        path[0] = address(tradedToken);
+        path[0] = address(rewardToken);
         path[1] = address(reinvestableToken);
-        uint[] memory amounts = uniswapRouter.swapExactTokensForTokens(hnyToConvert, minTokens, path, address(this), block.timestamp);
+
+        (uint256 slippage, uint256 expectedTokens) = _calculateSlippageForRewardSale(rewardToConvert);
+        require(slippage < MAX_SLIPPAGE_BASIS_POINTS, 'Maximum slippage for automagic transaction exceeded');
+        uint[] memory amounts = uniswapRouter.swapExactTokensForTokens(
+            rewardToConvert, 
+            expectedTokens.sub(1), 
+            path, 
+            address(this), 
+            block.timestamp);
 
         // We exchanged this amount of honey in the swap, remove it from the current balance
-        hnyAmt = hnyAmt.sub(amounts[0]);
+        rewardAmount = rewardAmount.sub(amounts[0]);
 
         // Use our whole balance of `reinvestableToken`, not just what we got back from the swap.
         // This makes sure that shavings of `reinvestableToken` don't accumulate, dead, in our wallet.
         // The next user to call this method will always either leave a few shavings themselves,
-        // or will receive the balance back in `tradedToken` instead, which we do account for per-user.
+        // or will receive the balance back in `rewardToken` instead, which we do account for per-user.
         uint256 reinvestableBalance = reinvestableToken.balanceOf(address(this));
+        // Approve the amount we're going to try and add to the pool
+        reinvestableToken.approve(address(uniswapRouter), reinvestableBalance);
         
         // add liquidity
-        (uint a, uint b, uint liquidity) = 
-            uniswapRouter.addLiquidity(address(tradedToken),
+        (uint rewardTokenAdded, , uint liquidity) = 
+            uniswapRouter.addLiquidity(address(rewardToken),
                                        address(reinvestableToken),
-                                       hnyToConvert,
+                                       rewardToConvert,
                                        reinvestableBalance,
                                        0, 0, // min
                                        address(this),
                                        block.timestamp);
         
+        // revoke approval
+        rewardToken.approve(address(uniswapRouter), 0);
+        reinvestableToken.approve(address(uniswapRouter), 0);
+
         // now also remove the amount of liquidity we added for the final total
-        return (liquidity, hnyAmt.sub(a));
+        return (liquidity, rewardAmount.sub(rewardTokenAdded));
     }
 }

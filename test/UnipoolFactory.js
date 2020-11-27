@@ -16,7 +16,7 @@ contract('UnipoolFactory', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             this.otherToken = await OtherToken.new();
             this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
             this.factory = await UnipoolFactory.new(this.tradedToken.address);
-            this.router = await UniswapRouter.new();
+            this.router = await UniswapRouter.new(0, 0);
         });
 
         it('creates a new Unipool and proxy for a given LP token', async function () {
