@@ -167,6 +167,7 @@ contract Unipool is LPTokenWrapper {
 
         emit RewardAdded(_amount);
     }
+
     
     function reinvestReward() public updateReward(msg.sender) {
         require(address(reinvestableToken) != address(0), "Reward token is not one side of pair");
@@ -181,22 +182,21 @@ contract Unipool is LPTokenWrapper {
         emit ReinvestedReward(msg.sender, reward.sub(remainingReward), liquidity);
     }
 
-    event Foo(uint256 i, uint256 t);
-
     function _calculateSlippageForRewardSale(uint256 tradeSize) private view returns(uint slippage, uint expectedTokens) {
         IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
         (uint256 rewardReserve, uint256 foreignReserve) = 
             uniswapRouter.getReserves(address(pair.factory()), address(rewardToken), address(reinvestableToken));
-        uint256 immediatePrice = foreignReserve.div(rewardReserve).mul(tradeSize);
-        uint256 totalPrice = uniswapRouter.getAmountOut(tradeSize, rewardReserve, foreignReserve);
+        
+        uint256 immediatePrice = foreignReserve.mul(tradeSize).div(rewardReserve);
 
-        return (immediatePrice.sub(totalPrice).div(totalPrice).mul(10000), totalPrice);
+        uint256 totalPrice = uniswapRouter.getAmountOut(tradeSize, rewardReserve, foreignReserve);
+        uint256 slippageBasisPoints = immediatePrice.sub(totalPrice).mul(10000).div(totalPrice); 
+        return (slippageBasisPoints, totalPrice);
     }
     
     function _poolReward(uint256 rewardAmount) private returns(uint256 liquidityTokens, uint256 remainingReward) {
         // convert half to target token
         uint256 rewardToConvert = rewardAmount.div(2);
-
         // approve the amount we're going to convert
         rewardToken.approve(address(uniswapRouter), rewardToConvert);
         

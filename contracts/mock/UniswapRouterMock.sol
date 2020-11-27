@@ -49,6 +49,11 @@ contract UniswapRouterMock is IUniswapV2Router01 {
         return (reserveA, reserveB);
     }
 
+    function setReserves(uint _reserveA, uint _reserveB) public {
+        reserveA = _reserveA;
+        reserveB = _reserveB;
+    }
+
     function getAmountOut(
         uint amountIn, 
         uint reserveIn, 
