@@ -167,7 +167,6 @@ contract Unipool is LPTokenWrapper {
 
         emit RewardAdded(_amount);
     }
-
     
     function reinvestReward() public updateReward(msg.sender) {
         require(address(reinvestableToken) != address(0), "Reward token is not one side of pair");
