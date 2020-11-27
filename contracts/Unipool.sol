@@ -208,7 +208,7 @@ contract Unipool is LPTokenWrapper {
         require(slippage < MAX_SLIPPAGE_BASIS_POINTS, 'Maximum slippage for automagic transaction exceeded');
         uint[] memory amounts = uniswapRouter.swapExactTokensForTokens(
             rewardToConvert, 
-            expectedTokens.sub(1), 
+            expectedTokens, 
             path, 
             address(this), 
             block.timestamp);
