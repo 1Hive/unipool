@@ -7,14 +7,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 contract UniswapRouterMock is IUniswapV2Router01 {
     using SafeMath for uint256;
 
-    uint256 reserveA;
-    uint256 reserveB;
-
-    constructor(uint256 _reserveA, uint256 _reserveB) public {
-        reserveA = _reserveA;
-        reserveB = _reserveB;
-    }
-
     function addLiquidity(
         address //tokenA
         , address //tokenB
@@ -39,19 +31,6 @@ contract UniswapRouterMock is IUniswapV2Router01 {
         amts[0] = amountIn;
         amts[1] = amountOutMin;
         return amts;
-    }
-
-    function getReserves(
-        address // factory
-        , address //tokenA
-        , address //tokenB
-    ) external view returns (uint _reserveA, uint _reserveB) {
-        return (reserveA, reserveB);
-    }
-
-    function setReserves(uint _reserveA, uint _reserveB) public {
-        reserveA = _reserveA;
-        reserveB = _reserveB;
     }
 
     function getAmountOut(

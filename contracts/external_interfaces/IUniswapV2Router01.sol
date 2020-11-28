@@ -20,12 +20,6 @@ interface IUniswapV2Router01 {
         uint deadline
     ) external returns (uint[] memory amounts);
 
-    function getReserves(
-        address factory, 
-        address tokenA, 
-        address tokenB
-    ) external view returns (uint reserveA, uint reserveB);
-
     function getAmountOut(
         uint amountIn, 
         uint reserveIn, 

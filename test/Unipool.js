@@ -48,7 +48,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             this.otherToken = await OtherToken.new();
             this.tradedToken = await TradedToken.new(wallet1);
             this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
-            this.router = await UniswapRouter.new(web3.utils.toWei('100000000'), web3.utils.toWei('100000000'));
+            this.router = await UniswapRouter.new();
             this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address, this.router.address);
 
             this.otherToken2 = await OtherToken.new();
@@ -321,7 +321,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
 
         it('reverts reinvestment when the slippage would be too high', async function () {
             const originalAwardAmount = 10000;
-            this.router.setReserves(web3.utils.toWei('100000'), web3.utils.toWei('100000'));
+            this.uniswapToken.setReserves(web3.utils.toWei('100000'), web3.utils.toWei('100000'));
 
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
             await this.unipool.stake(web3.utils.toWei('1'), { from: wallet1 });
@@ -329,12 +329,12 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             await timeIncreaseTo(this.started.add(time.duration.days(30)));
 
             await expectRevert(this.unipool.reinvestReward({ from: wallet1 }),
-                'Maximum slippage for automagic transaction exceeded');
+                'Slippage too high for automagic reinvestment');
         });
 
-        it('reinvests rewards for a pool balanced like (1000000000/1)', async function () {
+        it('reinvests rewards for a pool balanced like (10000000/1)', async function () {
             const originalAwardAmount = 1000;
-            this.router.setReserves(web3.utils.toWei('100000000000000'), web3.utils.toWei('100000'));
+            this.uniswapToken.setReserves(web3.utils.toWei('10000000000000'), web3.utils.toWei('1000000'));
 
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
             await this.unipool.stake(web3.utils.toWei('1'), { from: wallet1 });
@@ -346,9 +346,9 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('2'));
         })
 
-        it('reinvests rewards for a pool balanced like (1/1000000000)', async function () {
+        it('reinvests rewards for a pool balanced like (1/10000000)', async function () {
             const originalAwardAmount = 1000;
-            this.router.setReserves(web3.utils.toWei('100000'), web3.utils.toWei('100000000000000'));
+            this.uniswapToken.setReserves(web3.utils.toWei('1000000'), web3.utils.toWei('10000000000000'));
 
             await this.unipool.notifyRewardAmount(web3.utils.toWei(originalAwardAmount.toString()), { from: wallet1 });
             await this.unipool.stake(web3.utils.toWei('1'), { from: wallet1 });

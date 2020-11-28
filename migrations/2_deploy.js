@@ -32,7 +32,7 @@ module.exports = async function (deployer) {
         const uniswapToken2 = await UniswapForeignPairMock.at(UniswapForeignPairMock.address);
         await uniswapToken2.mint(senderAccount, BN(1000).mul(BN(10).pow(BN(18))));
 
-        await deployer.deploy(UniswapRouterMock, BN(1000).mul(BN(10).pow(BN(18))), BN(1000).mul(BN(10).pow(BN(18))));
+        await deployer.deploy(UniswapRouterMock);
 
         await deployer.deploy(UnipoolMock, uniswapToken.address, HoneyTokenMock.address, UniswapRouterMock.address);
         await deployer.deploy(UnipoolForeignPairMock, uniswapToken2.address, HoneyTokenMock.address, UniswapRouterMock.address);
