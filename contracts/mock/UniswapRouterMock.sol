@@ -8,14 +8,14 @@ contract UniswapRouterMock is IUniswapV2Router01 {
     using SafeMath for uint256;
 
     function addLiquidity(
-        address //tokenA
-        , address //tokenB
-        , uint amountADesired
-        , uint amountBDesired
-        , uint //amountAMin
-        , uint //amountBMin
-        , address //to
-        , uint //deadline
+        address, //tokenA
+        address, //tokenB
+        uint amountADesired,
+        uint amountBDesired,
+        uint, //amountAMin
+        uint, //amountBMin
+        address, //to
+        uint //deadline
     ) external returns (uint amountA, uint amountB, uint liquidity) {
         return (amountADesired, amountBDesired, 1);
     }
@@ -23,9 +23,9 @@ contract UniswapRouterMock is IUniswapV2Router01 {
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
-        address[] calldata //path
-        , address //to
-        , uint //deadline
+        address[] calldata, //path
+        address, //to
+        uint //deadline
     ) external returns (uint[] memory amounts) {
         uint[] memory amts = new uint[](2);
         amts[0] = amountIn;

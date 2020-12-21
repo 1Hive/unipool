@@ -12,10 +12,10 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 contract('UnipoolFactory', function ([_, wallet1, wallet2, wallet3, wallet4]) {
     describe('UnipoolFactory', async function () {
         beforeEach(async function () {
-            this.tradedToken = await TradedToken.new(wallet1);
+            this.rewardToken = await TradedToken.new(wallet1);
             this.otherToken = await OtherToken.new();
-            this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
-            this.factory = await UnipoolFactory.new(this.tradedToken.address);
+            this.uniswapToken = await UniswapPair.new(this.rewardToken.address, this.otherToken.address);
+            this.factory = await UnipoolFactory.new(this.rewardToken.address);
             this.router = await UniswapRouter.new(0, 0);
         });
 

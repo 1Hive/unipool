@@ -11,13 +11,13 @@ contract UnipoolFactory {
         UnipoolBalanceProxy proxy;
     }
 
-    IERC20 tradedToken;
+    IERC20 rewardToken;
 
     mapping(address => PoolInfo) public pools;
 
-    constructor(IERC20 _tradedToken) public {
-        require(_tradedToken != IERC20(0), "Need a nonzero traded token");
-        tradedToken = _tradedToken;
+    constructor(IERC20 _rewardToken) public {
+        require(_rewardToken != IERC20(0), "Need a nonzero traded token");
+        rewardToken = _rewardToken;
     }
 
     function createUnipool(
@@ -27,7 +27,7 @@ contract UnipoolFactory {
         PoolInfo storage poolInfo = pools[address(_uniswapTokenExchange)];
         require(address(poolInfo.pool) == address(0), "Pool already exists");
 
-        poolInfo.pool = new Unipool(_uniswapTokenExchange, _uniswapRouter, tradedToken);
+        poolInfo.pool = new Unipool(_uniswapTokenExchange, _uniswapRouter, rewardToken);
         return poolInfo.pool;
     }
 

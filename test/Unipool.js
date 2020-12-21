@@ -46,14 +46,14 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
     describe('Unipool', async function () {
         beforeEach(async function () {
             this.otherToken = await OtherToken.new();
-            this.tradedToken = await TradedToken.new(wallet1);
-            this.uniswapToken = await UniswapPair.new(this.tradedToken.address, this.otherToken.address);
+            this.rewardToken = await TradedToken.new(wallet1);
+            this.uniswapToken = await UniswapPair.new(this.rewardToken.address, this.otherToken.address);
             this.router = await UniswapRouter.new();
-            this.unipool = await Unipool.new(this.uniswapToken.address, this.tradedToken.address, this.router.address);
+            this.unipool = await Unipool.new(this.uniswapToken.address, this.rewardToken.address, this.router.address);
 
             this.otherToken2 = await OtherToken.new();
             this.uniswapToken2 = await UniswapPair.new(this.otherToken2.address, this.otherToken.address);
-            this.unipoolForeign = await Unipool.new(this.uniswapToken2.address, this.tradedToken.address, this.router.address);
+            this.unipoolForeign = await Unipool.new(this.uniswapToken2.address, this.rewardToken.address, this.router.address);
 
             await this.uniswapToken.mint(wallet1, web3.utils.toWei('1000'));
             await this.uniswapToken.mint(wallet2, web3.utils.toWei('1000'));
@@ -61,13 +61,13 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             await this.uniswapToken.mint(wallet4, web3.utils.toWei('1000'));
             await this.uniswapToken2.mint(wallet1, web3.utils.toWei('1000'));
 
-            await this.tradedToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
+            await this.rewardToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet2 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet3 });
             await this.uniswapToken.approve(this.unipool.address, new BN(2).pow(new BN(255)), { from: wallet4 });
 
-            await this.tradedToken.approve(this.unipoolForeign.address, new BN(2).pow(new BN(255)), { from: wallet1 });
+            await this.rewardToken.approve(this.unipoolForeign.address, new BN(2).pow(new BN(255)), { from: wallet1 });
             await this.uniswapToken2.approve(this.unipoolForeign.address, new BN(2).pow(new BN(255)), { from: wallet1 });
 
             this.started = (await time.latest()).addn(10);

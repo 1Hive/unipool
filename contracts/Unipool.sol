@@ -72,11 +72,6 @@ contract Unipool is LPTokenWrapper {
         _;
     }
 
-    modifier onlyTradable {
-        require(tradableToken != IERC20(0), "Reward token is not one side of pair");
-        _;
-    }
-
     constructor(IERC20 _uniswapTokenExchange, IUniswapV2Router01 _uniswapRouter, IERC20 _rewardToken) public {
         uniswapTokenExchange = _uniswapTokenExchange;
         uniswapRouter = _uniswapRouter;
@@ -159,7 +154,9 @@ contract Unipool is LPTokenWrapper {
         emit RewardAdded(_amount);
     }
     
-    function reinvestReward() public updateReward(msg.sender) onlyTradable() {
+    function reinvestReward() public updateReward(msg.sender) {
+        require(tradableToken != IERC20(0), "Reward token is not one side of pair");
+
         uint256 reward = earned(msg.sender);
         require(reward > 0, "Nothing to reinvest");
         
@@ -169,28 +166,10 @@ contract Unipool is LPTokenWrapper {
 
         emit ReinvestedReward(msg.sender, reward.sub(remainingReward), liquidity);
     }
-
-    function _getMinimumTokensForRewardSale(uint256 tradeSize) private view returns(uint256 minTokens) {
-        IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
-
-        // Get reserves and order them correctly
-        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
-        (uint256 rewardReserve, uint256 foreignReserve) = 
-            rewardToken == pair.token0() ? (reserve0, reserve1) : (reserve1, reserve0);
-        
-        // Price of our trade if the price didn't slip
-        uint256 immediatePrice = tradeSize.mul(foreignReserve).div(rewardReserve);
-        // The lowest we'd be willing to accept, based on max slippage
-        uint256 acceptablePrice = immediatePrice.mul(10000 - MAX_SLIPPAGE_BASIS_POINTS).div(10000);
-        // Preflight here mostly for the benefit of unit tests
-        require(uniswapRouter.getAmountOut(tradeSize, rewardReserve, foreignReserve) >= acceptablePrice, 
-            "Slippage too high for automagic reinvestment");
-        return acceptablePrice;
-    }
     
     function _poolReward(uint256 rewardAmount) private returns(uint256 liquidityTokens, uint256 remainingReward) {
         // convert half to target token
-        uint256 rewardToConvert = rewardAmount.div(2);
+        uint256 rewardToConvert = rewardAmount / 2;
         // approve the amount we're going to convert
         rewardToken.approve(address(uniswapRouter), rewardToConvert);
         
@@ -206,7 +185,7 @@ contract Unipool is LPTokenWrapper {
             address(this), 
             block.timestamp);
 
-        // We exchanged this amount of honey in the swap, remove it from the current balance
+        // We exchanged this amount of the reward token in the swap, remove it from the current balance
         rewardAmount = rewardAmount.sub(amounts[0]);
 
         // Use our whole balance of `tradableToken`, not just what we got back from the swap.
@@ -237,19 +216,34 @@ contract Unipool is LPTokenWrapper {
         return (liquidity, rewardAmount.sub(rewardTokenAdded));
     }
 
+    function _getMinimumTokensForRewardSale(uint256 tradeSize) private view returns(uint256 minTokens) {
+        IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
+
+        // Get reserves and order them correctly
+        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+        (uint256 rewardReserve, uint256 foreignReserve) = 
+            rewardToken == pair.token0() ? (reserve0, reserve1) : (reserve1, reserve0);
+        
+        // Price of our trade if the price didn't slip
+        uint256 immediatePrice = tradeSize.mul(foreignReserve).div(rewardReserve);
+        // The lowest we'd be willing to accept, based on max slippage
+        uint256 acceptablePrice = immediatePrice.mul(10000 - MAX_SLIPPAGE_BASIS_POINTS).div(10000);
+        // Preflight here mostly for the benefit of unit tests
+        require(uniswapRouter.getAmountOut(tradeSize, rewardReserve, foreignReserve) >= acceptablePrice, 
+            "Slippage too high for automagic reinvestment");
+        return acceptablePrice;
+    }
+
     // Gets the paired token if rewards are tradable (if one of the sides of the pair is our reward token)
     function _getPairedTokenIfRewardsTradable() private view returns (IERC20) {
         IUniswapV2Pair pair = IUniswapV2Pair(address(uniswapTokenExchange));
-        if (pair.token0() != rewardToken && pair.token1() != rewardToken) {
+        if (pair.token0() == rewardToken) {
+            return pair.token1();
+        } else if (pair.token1() == rewardToken) {
+            return pair.token0();
+        } else {
             // We can only reinvest if we're giving rewards in one side of the pair (currently)
             return IERC20(0);
-        } 
-
-        if (pair.token0() == rewardToken) {
-            return IERC20(pair.token1());
-        } else {
-            return IERC20(pair.token0());
         }
     }
-
 }
