@@ -2,15 +2,12 @@ pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./TokenManagerHook.sol";
 
 contract LPTokenWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-
-    IERC20 public depositToken;
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -26,17 +23,15 @@ contract LPTokenWrapper {
     function stake(uint256 amount, address user) internal {
         _totalSupply = _totalSupply.add(amount);
         _balances[user] = _balances[user].add(amount);
-        depositToken.safeTransferFrom(user, address(this), amount);
     }
 
     function withdraw(uint256 amount, address user) internal {
         _totalSupply = _totalSupply.sub(amount);
         _balances[user] = _balances[user].sub(amount);
-        depositToken.safeTransfer(user, amount);
     }
 }
 
-contract Unipool is LPTokenWrapper, Ownable, TokenManagerHook {
+contract Unipool is LPTokenWrapper, TokenManagerHook {
     // HONEY
     IERC20 public rewardToken;
     uint256 public constant DURATION = 30 days;
@@ -63,10 +58,8 @@ contract Unipool is LPTokenWrapper, Ownable, TokenManagerHook {
         _;
     }
 
-    constructor(IERC20 _depositToken, IERC20 _rewardToken) public {
-        require(address(_depositToken) != address(0), "deposit token not present");
+    constructor(IERC20 _rewardToken) public {
         require(address(_rewardToken) != address(0), "reward token not present");
-        depositToken = _depositToken;
         rewardToken = _rewardToken;
     }
 
@@ -149,10 +142,10 @@ contract Unipool is LPTokenWrapper, Ownable, TokenManagerHook {
      * @dev Overrides TokenManagerHook's `_onTransfer`
      */
     function _onTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
-        if (_from == 0x0) { // Token mintings (wrapping tokens)
+        if (_from == address(0)) { // Token mintings (wrapping tokens)
             stake(_amount, _to);
             return true;
-        } else if (_to == 0x0) { // Token burning (unwrapping tokens)
+        } else if (_to == address(0)) { // Token burning (unwrapping tokens)
             withdraw(_amount, _from);
             return true;
         } else { // Standard transfer

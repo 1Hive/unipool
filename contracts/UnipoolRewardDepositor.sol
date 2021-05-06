@@ -9,8 +9,8 @@ contract UnipoolRewardDepositor {
     Unipool public unipool;
     IERC20 public rewardToken;
 
-    constructor(Unipool _pool, IERC20 _rewardToken) public {
-        unipool = _pool;
+    constructor(Unipool _unipool, IERC20 _rewardToken) public {
+        unipool = _unipool;
         rewardToken = _rewardToken;
     }
 
