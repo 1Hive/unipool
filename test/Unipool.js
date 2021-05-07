@@ -66,7 +66,6 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         });
 
         it('Two stakers with the same stakes wait 30 days', async function () {
-            // 72000 SNX per week for 3 weeks
             expect(await this.unipool.rewardPerToken()).to.be.bignumber.almostEqualDiv1e18('0');
             expect(await this.unipool.earned(wallet1)).to.be.bignumber.equal('0');
             expect(await this.unipool.earned(wallet2)).to.be.bignumber.equal('0');
@@ -88,7 +87,6 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         });
 
         it('Two stakers with the different (1:3) stakes wait 30 days', async function () {
-            // 72000 SNX per week
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
 
             expect(await this.unipool.rewardPerToken()).to.be.bignumber.almostEqualDiv1e18('0');
@@ -117,7 +115,6 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             // 3x:         +--------+ =  0k for 30 days + 54k for 60 days
             //
 
-            // 72000 SNX per week
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
 
             await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
@@ -130,7 +127,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.earned(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('72000'));
             expect(await this.unipool.earned(wallet2)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('0'));
 
-            // Forward to week 3 and notifyReward weekly
+            // Forward to month 3 and notifyReward monthly
             for (let i = 1; i < 3; i++) {
                 await timeIncreaseTo(this.started.add(time.duration.days(30 * (i + 1))));
                 await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
@@ -148,7 +145,6 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             // 5x:         +-----------------+ =  0k for 30 days + 40k for 60 days + 60k for 90 days
             //
 
-            // 72000 SNX per week for 3 weeks
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
 
             await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
@@ -183,7 +179,6 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         });
 
         it('One staker on 2 durations with gap', async function () {
-            // 72000 SNX per week for 1 weeks
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
 
             await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
@@ -202,8 +197,28 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.earned(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('144000'));
         });
 
+        it('Transferring stake from one account to another', async function () {
+            await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 })
+
+            await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
+            expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.equal(web3.utils.toWei('1'))
+            expect(await this.unipool.earned(wallet1)).to.be.bignumber.equal('0')
+
+            await timeIncreaseTo(this.started.add(time.duration.days(15)))
+
+            expect(await this.unipool.earned(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('36000'))
+
+            await this.unipool.onTransfer(wallet1, wallet2, web3.utils.toWei('1'))
+            expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.equal('0')
+            expect(await this.unipool.balanceOf(wallet2)).to.be.bignumber.equal(web3.utils.toWei('1'))
+            expect(await this.unipool.earned(wallet2)).to.be.bignumber.equal('0')
+
+            await timeIncreaseTo(this.started.add(time.duration.days(30)))
+
+            expect(await this.unipool.earned(wallet2)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('36000'));
+        })
+
         it('Notify Reward Amount from mocked distribution to 10,000', async function () {
-            // 10000 SNX per week for 1 weeks
             await this.unipool.notifyRewardAmount(web3.utils.toWei('10000'), { from: wallet1 });
 
             expect(await this.unipool.rewardPerToken()).to.be.bignumber.almostEqualDiv1e18('0');
