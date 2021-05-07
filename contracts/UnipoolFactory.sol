@@ -6,13 +6,21 @@ import "./UnipoolRewardDepositor.sol";
 
 contract UnipoolFactory {
 
-    function createUnipool(IERC20 _rewardToken) public returns (Unipool) {
-        return new Unipool(_rewardToken);
+    event NewUnipool(Unipool unipool);
+    event NewRewardDepositor(UnipoolRewardDepositor unipoolRewardDepositor);
+
+    function newUnipool(IERC20 _rewardToken) public returns (Unipool) {
+        Unipool unipool = new Unipool(_rewardToken);
+        emit NewUnipool(unipool);
+
+        return unipool;
     }
 
-    function createUnipoolWithDepositor(IERC20 _rewardToken) public returns (Unipool, UnipoolRewardDepositor) {
-        Unipool unipool = createUnipool(_rewardToken);
-        UnipoolRewardDepositor depositor = new UnipoolRewardDepositor(unipool, _rewardToken);
-        return (unipool, depositor);
+    function newUnipoolWithDepositor(IERC20 _rewardToken) public returns (Unipool, UnipoolRewardDepositor) {
+        Unipool unipool = newUnipool(_rewardToken);
+        UnipoolRewardDepositor unipoolRewardDepositor = new UnipoolRewardDepositor(unipool, _rewardToken);
+        emit NewRewardDepositor(unipoolRewardDepositor);
+
+        return (unipool, unipoolRewardDepositor);
     }
 }

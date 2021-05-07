@@ -81,7 +81,8 @@ contract TokenManagerHook is ReentrancyGuard {
     }
 
     /*
-    * @dev Called when this contract has been included as a Token Manager hook
+    * @dev Called when this contract has been included as a Token Manager hook, must be called in the transaction
+    *   this contract is created or it risks some other address registering itself as the Token Manager
     * @param _hookId The position in which the hook is going to be called
     * @param _token The token controlled by the Token Manager
     */

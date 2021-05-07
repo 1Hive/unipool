@@ -32,7 +32,6 @@ contract LPTokenWrapper {
 }
 
 contract Unipool is LPTokenWrapper, TokenManagerHook {
-    // HONEY
     IERC20 public rewardToken;
     uint256 public constant DURATION = 30 days;
 
@@ -129,13 +128,6 @@ contract Unipool is LPTokenWrapper, TokenManagerHook {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit RewardAdded(_amount);
-    }
-
-    /**
-     * @dev Overrides TokenManagerHook's `_onRegisterAsHook`
-     */
-    function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
-        require(_token == address(rewardToken), "Incorrect reward token");
     }
 
     /**
