@@ -4,6 +4,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Unipool.sol";
 import "./UnipoolRewardDepositor.sol";
 
+// Rinkeby deployment: 0x710D70591C70B1aA96d558269193F0e59F52E154
+// xDai deployment: 0xD38EB36B7E8b126Ff1E9fDD007bC4050B6C6aB7c
+
 contract UnipoolFactory {
 
     event NewUnipool(Unipool unipool);

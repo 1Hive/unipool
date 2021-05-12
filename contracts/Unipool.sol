@@ -10,7 +10,7 @@ contract LPTokenWrapper {
     using SafeERC20 for IERC20;
 
     uint256 private _totalSupply;
-    mapping(address => uint256) private _balances;
+    mapping(address => uint256) internal _balances;
 
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
@@ -97,15 +97,22 @@ contract Unipool is LPTokenWrapper, TokenManagerHook {
     function withdraw(uint256 amount, address user) internal updateReward(user) {
         require(amount > 0, "Cannot withdraw 0");
         super.withdraw(amount, user);
+        if (_balances[user] == 0) {
+            _getReward(user);
+        }
         emit Withdrawn(user, amount);
     }
 
     function getReward() external updateReward(msg.sender){
-        uint256 reward = earned(msg.sender);
+        _getReward(msg.sender);
+    }
+
+    function _getReward(address user) internal {
+        uint256 reward = earned(user);
         if (reward > 0) {
-            rewards[msg.sender] = 0;
-            rewardToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
+            rewards[user] = 0;
+            rewardToken.safeTransfer(user, reward);
+            emit RewardPaid(user, reward);
         }
     }
 

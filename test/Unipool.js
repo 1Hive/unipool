@@ -167,7 +167,6 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.earned(wallet3)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('40000'));
 
             await this.unipool.onTransfer(wallet2, ZERO_ADDRESS, await this.unipool.balanceOf(wallet2))
-            await this.unipool.getReward({from: wallet2})
 
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
             await timeIncreaseTo(this.started.add(time.duration.days(90)));
@@ -177,6 +176,34 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.earned(wallet2)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('0'));
             expect(await this.unipool.earned(wallet3)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('100000'));
         });
+
+        it('Returns reward when withdrawing entire stake', async function () {
+            await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
+            await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
+            await timeIncreaseTo(this.started.add(time.duration.days(15)));
+
+            const earned = await this.unipool.earned(wallet1)
+            expect(earned).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('36000'));
+            const rewardTokenBalanceBefore = await this.rewardToken.balanceOf(wallet1)
+
+            await this.unipool.onTransfer(wallet1, ZERO_ADDRESS, await this.unipool.balanceOf(wallet1))
+
+            const rewardTokenBalanceAfter = await this.rewardToken.balanceOf(wallet1)
+            expect(rewardTokenBalanceBefore.add(earned)).to.be.bignumber.almostEqualDiv1e18(rewardTokenBalanceAfter)
+        })
+
+        it('Does not return reward when note withdrawing entire stake', async function () {
+            await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
+            await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
+            await timeIncreaseTo(this.started.add(time.duration.days(15)));
+
+            const rewardTokenBalanceBefore = await this.rewardToken.balanceOf(wallet1)
+
+            await this.unipool.onTransfer(wallet1, ZERO_ADDRESS, (await this.unipool.balanceOf(wallet1)).sub(new BN(1)))
+
+            const rewardTokenBalanceAfter = await this.rewardToken.balanceOf(wallet1)
+            expect(rewardTokenBalanceBefore).to.be.bignumber.almostEqualDiv1e18(rewardTokenBalanceAfter)
+        })
 
         it('One staker on 2 durations with gap', async function () {
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
