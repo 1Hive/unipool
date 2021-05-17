@@ -2,17 +2,15 @@ pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "./TokenManagerHook.sol";
 
 contract LPTokenWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public uniswapTokenExchange = IERC20(0x4505b262DC053998C10685DC5F9098af8AE5C8ad);
-
     uint256 private _totalSupply;
-    mapping(address => uint256) private _balances;
+    mapping(address => uint256) internal _balances;
 
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
@@ -22,22 +20,19 @@ contract LPTokenWrapper {
         return _balances[account];
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount, address user) internal {
         _totalSupply = _totalSupply.add(amount);
-        _balances[msg.sender] = _balances[msg.sender].add(amount);
-        uniswapTokenExchange.safeTransferFrom(msg.sender, address(this), amount);
+        _balances[user] = _balances[user].add(amount);
     }
 
-    function withdraw(uint256 amount) public {
+    function withdraw(uint256 amount, address user) internal {
         _totalSupply = _totalSupply.sub(amount);
-        _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        uniswapTokenExchange.safeTransfer(msg.sender, amount);
+        _balances[user] = _balances[user].sub(amount);
     }
 }
 
-contract Unipool is LPTokenWrapper {
-    // HONEY
-    IERC20 public tradedToken = IERC20(0x71850b7E9Ee3f13Ab46d67167341E4bDc905Eef9);
+contract Unipool is LPTokenWrapper, TokenManagerHook {
+    IERC20 public rewardToken;
     uint256 public constant DURATION = 30 days;
 
     uint256 public periodFinish = 0;
@@ -62,8 +57,9 @@ contract Unipool is LPTokenWrapper {
         _;
     }
 
-    constructor(IERC20 _uniswapTokenExchange) public {
-        uniswapTokenExchange = _uniswapTokenExchange;
+    constructor(IERC20 _rewardToken) public {
+        require(address(_rewardToken) != address(0), "reward token not present");
+        rewardToken = _rewardToken;
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
@@ -92,30 +88,31 @@ contract Unipool is LPTokenWrapper {
                 .add(rewards[account]);
     }
 
-    // stake visibility is public as overriding LPTokenWrapper's stake() function
-    function stake(uint256 amount) public updateReward(msg.sender) {
+    function stake(uint256 amount, address user) internal updateReward(user) {
         require(amount > 0, "Cannot stake 0");
-        super.stake(amount);
-        emit Staked(msg.sender, amount);
+        super.stake(amount, user);
+        emit Staked(user, amount);
     }
 
-    function withdraw(uint256 amount) public updateReward(msg.sender) {
+    function withdraw(uint256 amount, address user) internal updateReward(user) {
         require(amount > 0, "Cannot withdraw 0");
-        super.withdraw(amount);
-        emit Withdrawn(msg.sender, amount);
+        super.withdraw(amount, user);
+        if (_balances[user] == 0) {
+            _getReward(user);
+        }
+        emit Withdrawn(user, amount);
     }
 
-    function exit() external {
-        withdraw(balanceOf(msg.sender));
-        getReward();
+    function getReward() external updateReward(msg.sender){
+        _getReward(msg.sender);
     }
 
-    function getReward() public updateReward(msg.sender) {
-        uint256 reward = earned(msg.sender);
+    function _getReward(address user) internal {
+        uint256 reward = earned(user);
         if (reward > 0) {
-            rewards[msg.sender] = 0;
-            tradedToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
+            rewards[user] = 0;
+            rewardToken.safeTransfer(user, reward);
+            emit RewardPaid(user, reward);
         }
     }
 
@@ -135,8 +132,25 @@ contract Unipool is LPTokenWrapper {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
 
-        tradedToken.safeTransferFrom(msg.sender, address(this), _amount);
+        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit RewardAdded(_amount);
+    }
+
+    /**
+     * @dev Overrides TokenManagerHook's `_onTransfer`
+     */
+    function _onTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
+        if (_from == address(0)) { // Token mintings (wrapping tokens)
+            stake(_amount, _to);
+            return true;
+        } else if (_to == address(0)) { // Token burning (unwrapping tokens)
+            withdraw(_amount, _from);
+            return true;
+        } else { // Standard transfer
+            withdraw(_amount, _from);
+            stake(_amount, _to);
+            return true;
+        }
     }
 }

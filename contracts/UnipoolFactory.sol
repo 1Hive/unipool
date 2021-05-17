@@ -2,43 +2,28 @@ pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Unipool.sol";
-import "./UnipoolBalanceProxy.sol";
+import "./UnipoolRewardDepositor.sol";
+
+// Rinkeby deployment: 0x710D70591C70B1aA96d558269193F0e59F52E154
+// xDai deployment: 0xD38EB36B7E8b126Ff1E9fDD007bC4050B6C6aB7c
 
 contract UnipoolFactory {
 
-    struct PoolInfo {
-        Unipool pool;
-        UnipoolBalanceProxy proxy;
+    event NewUnipool(Unipool unipool);
+    event NewRewardDepositor(UnipoolRewardDepositor unipoolRewardDepositor);
+
+    function newUnipool(IERC20 _rewardToken) public returns (Unipool) {
+        Unipool unipool = new Unipool(_rewardToken);
+        emit NewUnipool(unipool);
+
+        return unipool;
     }
 
-    mapping(address => PoolInfo) public pools;
+    function newUnipoolWithDepositor(IERC20 _rewardToken) public returns (Unipool, UnipoolRewardDepositor) {
+        Unipool unipool = newUnipool(_rewardToken);
+        UnipoolRewardDepositor unipoolRewardDepositor = new UnipoolRewardDepositor(unipool, _rewardToken);
+        emit NewRewardDepositor(unipoolRewardDepositor);
 
-    function createUnipool(
-        IERC20 _uniswapTokenExchange
-    ) public returns (Unipool) {
-        PoolInfo storage poolInfo = pools[address(_uniswapTokenExchange)];
-        require(address(poolInfo.pool) == address(0), "Pool already exists");
-
-        poolInfo.pool = new Unipool(_uniswapTokenExchange);
-        return poolInfo.pool;
-    }
-
-    function createBalanceProxy(
-        IERC20 _uniswapTokenExchange
-    ) public returns (UnipoolBalanceProxy) {
-        PoolInfo storage poolInfo = pools[address(_uniswapTokenExchange)];
-        require(address(poolInfo.pool) != address(0), "Pool doesn't exist");
-
-        poolInfo.proxy = new UnipoolBalanceProxy(poolInfo.pool);
-        return poolInfo.proxy;
-    }
-
-    function createUnipoolWithProxy(
-        IERC20 _uniswapTokenExchange
-    ) public returns (Unipool, UnipoolBalanceProxy) {
-        Unipool pool = createUnipool(_uniswapTokenExchange);
-        UnipoolBalanceProxy proxy = createBalanceProxy(_uniswapTokenExchange);
-
-        return (pool, proxy);
+        return (unipool, unipoolRewardDepositor);
     }
 }
