@@ -192,7 +192,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(rewardTokenBalanceBefore.add(earned)).to.be.bignumber.almostEqualDiv1e18(rewardTokenBalanceAfter)
         })
 
-        it('Does not return reward when note withdrawing entire stake', async function () {
+        it('Does not return reward when not withdrawing entire stake', async function () {
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 });
             await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
             await timeIncreaseTo(this.started.add(time.duration.days(15)));
@@ -227,6 +227,7 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
         it('Transferring stake from one account to another', async function () {
             await this.unipool.notifyRewardAmount(web3.utils.toWei('72000'), { from: wallet1 })
 
+            const rewardTokenBalanceBefore = await this.rewardToken.balanceOf(wallet1)
             await this.unipool.onTransfer(ZERO_ADDRESS, wallet1, web3.utils.toWei('1'))
             expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.equal(web3.utils.toWei('1'))
             expect(await this.unipool.earned(wallet1)).to.be.bignumber.equal('0')
@@ -236,6 +237,9 @@ contract('Unipool', function ([_, wallet1, wallet2, wallet3, wallet4]) {
             expect(await this.unipool.earned(wallet1)).to.be.bignumber.almostEqualDiv1e18(web3.utils.toWei('36000'))
 
             await this.unipool.onTransfer(wallet1, wallet2, web3.utils.toWei('1'))
+
+            const rewardTokenBalanceAfter = await this.rewardToken.balanceOf(wallet1)
+            expect(rewardTokenBalanceBefore.add(new BN(web3.utils.toWei('36000')))).to.be.bignumber.almostEqualDiv1e18(rewardTokenBalanceAfter)
             expect(await this.unipool.balanceOf(wallet1)).to.be.bignumber.equal('0')
             expect(await this.unipool.balanceOf(wallet2)).to.be.bignumber.equal(web3.utils.toWei('1'))
             expect(await this.unipool.earned(wallet2)).to.be.bignumber.equal('0')
