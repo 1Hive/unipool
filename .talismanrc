@@ -1,0 +1,6 @@
+fileignoreconfig:
+- filename: .env.sample
+  checksum: eb5503ced9105148b8b3132db6c831f45d5a8754c639568a8e5f3692f0e296d2
+- filename: contracts/UnipoolFactory.sol
+  checksum: e2ebb7b2271788a0158332de5b68bb3529514e4038dc2ce8d1d80442be63959c
+version: ""
