@@ -12,8 +12,10 @@
     "@truffle/hdwallet-provider": "^1.0.44"
   },
   "devDependencies": {
+    "@aragon/truffle-config-v5": "^1.0.1",
     "chai": "^4.2.0",
     "coveralls": "^3.0.7",
+    "dotenv": "^16.0.3",
     "eslint": "^6.6.0",
     "eslint-config-standard": "^14.1.0",
     "eslint-plugin-import": "^2.14.0",
@@ -28,8 +30,7 @@
     "solium": "^1.2.5",
     "truffle": "^5.0.43",
     "truffle-flattener": "^1.3.0",
-    "truffle-plugin-verify": "^0.4.0",
-    "@aragon/truffle-config-v5": "^1.0.1"
+    "truffle-plugin-verify": "^0.4.0"
   },
   "scripts": {
     "test": "scripts/test.sh",
